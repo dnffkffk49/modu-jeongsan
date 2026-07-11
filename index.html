@@ -1,0 +1,863 @@
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>모두의 정산</title>
+<style>
+  /* ===== 전체 색깔·글꼴 기본값 (여기 색만 바꾸면 분위기가 바뀌어요) ===== */
+  :root {
+    --bg1: #ffe3ec;      /* 배경 그라데이션 위쪽 (연분홍) */
+    --bg2: #fff5e1;      /* 배경 그라데이션 아래쪽 (연노랑) */
+    --card: #ffffff;     /* 카드 배경 (흰색) */
+    --point: #ff8fab;    /* 포인트 색 (핑크) */
+    --point-dark: #ff5c8a;
+    --accent: #7ec8e3;   /* 보조 색 (하늘색) */
+    --text: #5b4a52;     /* 기본 글자색 */
+    --soft: #fff0f5;     /* 아주 연한 배경 */
+    --good: #4caf82;     /* 받을 돈 (초록) */
+    --bad: #ff6b6b;      /* 낼 돈 (빨강) */
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 0 0 60px;
+    font-family: "Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", sans-serif;
+    color: var(--text);
+    background: linear-gradient(160deg, var(--bg1), var(--bg2));
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  .wrap { max-width: 620px; margin: 0 auto; padding: 0 16px; }
+
+  /* ===== 맨 위 제목 ===== */
+  header { text-align: center; padding: 34px 0 20px; }
+  header h1 {
+    margin: 0;
+    font-size: 40px;
+    color: var(--point-dark);
+    text-shadow: 2px 2px 0 #fff, 4px 4px 0 rgba(255,143,171,.25);
+    letter-spacing: -1px;
+  }
+  header .subtitle {
+    margin-top: 10px;
+    display: inline-block;
+    background: var(--point);
+    color: #fff;
+    font-size: 15px;
+    font-weight: bold;
+    padding: 7px 16px;
+    border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(255,92,138,.3);
+  }
+
+  /* ===== 카드(하얀 상자) 공통 ===== */
+  .card {
+    background: var(--card);
+    border-radius: 24px;
+    padding: 22px;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 24px rgba(255,143,171,.18);
+    border: 2px solid #ffe0ea;
+  }
+  .card h2 {
+    margin: 0 0 16px;
+    font-size: 19px;
+    color: var(--point-dark);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  label { font-size: 14px; font-weight: bold; display: block; margin-bottom: 6px; }
+
+  input, select {
+    width: 100%;
+    padding: 12px 14px;
+    font-size: 15px;
+    border: 2px solid #ffdbe6;
+    border-radius: 14px;
+    background: var(--soft);
+    color: var(--text);
+    font-family: inherit;
+    outline: none;
+    transition: border-color .15s;
+  }
+  input:focus, select:focus { border-color: var(--point); }
+
+  .row { display: flex; gap: 10px; }
+  .row > * { flex: 1; }
+  .field { margin-bottom: 14px; }
+
+  /* ===== 버튼들 ===== */
+  button {
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    border-radius: 14px;
+    font-weight: bold;
+    transition: transform .1s, box-shadow .15s;
+  }
+  button:active { transform: scale(.96); }
+
+  .btn-main {
+    width: 100%;
+    padding: 16px;
+    font-size: 18px;
+    color: #fff;
+    background: linear-gradient(135deg, var(--point), var(--point-dark));
+    box-shadow: 0 6px 16px rgba(255,92,138,.35);
+  }
+  .btn-add {
+    padding: 12px 16px;
+    font-size: 15px;
+    color: #fff;
+    background: var(--accent);
+    white-space: nowrap;
+  }
+  .btn-small {
+    padding: 6px 10px;
+    font-size: 13px;
+    background: #ffd9d9;
+    color: #d15b5b;
+  }
+
+  /* ===== 참여자 이름 칩 ===== */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+  .chip {
+    background: var(--soft);
+    border: 2px solid #ffdbe6;
+    border-radius: 999px;
+    padding: 7px 8px 7px 14px;
+    font-size: 14px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .chip button {
+    background: #ffcede;
+    color: #d15b5b;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+  }
+
+  /* ===== 지출 내역 리스트 ===== */
+  .expense-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--soft);
+    border-radius: 16px;
+    padding: 12px 14px;
+    margin-top: 10px;
+  }
+  .expense-item .emoji { font-size: 24px; }
+  .expense-item .info { flex: 1; min-width: 0; }
+  .expense-item .info .top { font-weight: bold; font-size: 15px; }
+  .expense-item .info .bottom { font-size: 12.5px; color: #a48b95; }
+  .expense-item .amount { font-weight: bold; color: var(--point-dark); white-space: nowrap; }
+
+  .empty { text-align: center; color: #c9b3bc; font-size: 14px; padding: 14px 0; }
+
+  /* ===== 결과 영역 ===== */
+  #result { display: none; }
+  .result-head { text-align: center; margin-bottom: 8px; }
+  .result-head h2 { justify-content: center; font-size: 22px; }
+
+  .summary-box {
+    background: linear-gradient(135deg, #fff0f5, #fff9ec);
+    border-radius: 18px;
+    padding: 16px;
+    text-align: center;
+    margin-bottom: 8px;
+    border: 2px dashed #ffc4d6;
+  }
+  .summary-box .big { font-size: 26px; font-weight: bold; color: var(--point-dark); }
+
+  .person-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: var(--soft);
+    margin-top: 8px;
+    font-size: 15px;
+  }
+  .person-row .name { font-weight: bold; }
+  .person-row .detail { font-size: 12.5px; color: #a48b95; }
+  .tag-good { color: var(--good); font-weight: bold; }
+  .tag-bad { color: var(--bad); font-weight: bold; }
+  .tag-zero { color: #b0a0a8; font-weight: bold; }
+
+  .pay-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: #fff;
+    border: 2px solid #ffe0ea;
+    border-radius: 16px;
+    padding: 14px;
+    margin-top: 10px;
+    font-size: 16px;
+    font-weight: bold;
+  }
+  .pay-row .from { color: var(--bad); }
+  .pay-row .to { color: var(--good); }
+  .pay-row .arrow { font-size: 20px; }
+  .pay-row .money {
+    margin-left: auto;
+    background: var(--point);
+    color: #fff;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 14px;
+  }
+
+  .cute-ment {
+    text-align: center;
+    margin-top: 22px;
+    font-size: 17px;
+    font-weight: bold;
+    color: var(--point-dark);
+    background: #fff;
+    border-radius: 18px;
+    padding: 18px;
+    border: 2px solid #ffe0ea;
+  }
+
+  .hint { font-size: 12.5px; color: #b8a3ac; margin-top: 6px; }
+
+  /* ===== 정산 방식 고르기 ===== */
+  .method-options { display: flex; gap: 12px; }
+  .method-opt {
+    flex: 1;
+    cursor: pointer;
+    text-align: center;
+    border: 2px solid #ffdbe6;
+    border-radius: 18px;
+    padding: 16px 8px;
+    background: var(--soft);
+    font-weight: bold;
+    transition: all .15s;
+  }
+  .method-opt .ic { font-size: 30px; display: block; margin-bottom: 6px; }
+  .method-opt .sub { font-size: 12px; color: #a48b95; font-weight: normal; margin-top: 5px; line-height: 1.4; }
+  .method-opt.on {
+    border-color: var(--point);
+    background: #fff;
+    color: var(--point-dark);
+    box-shadow: 0 6px 14px rgba(255,92,138,.25);
+    transform: translateY(-2px);
+  }
+
+  /* ===== 지출 리포트 표 ===== */
+  .cat-summary { display: flex; flex-wrap: wrap; gap: 8px; margin: 2px 0 14px; }
+  .cat-pill {
+    background: var(--soft);
+    border: 2px solid #ffdbe6;
+    border-radius: 999px;
+    padding: 6px 13px;
+    font-size: 13px;
+    font-weight: bold;
+  }
+  .report-wrap { overflow-x: auto; border-radius: 14px; border: 2px solid #ffe0ea; }
+  table.report { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  table.report th, table.report td { padding: 10px 9px; text-align: left; white-space: nowrap; }
+  table.report thead th { background: var(--point); color: #fff; }
+  table.report thead th.num, table.report td.num, table.report tfoot td.num { text-align: right; }
+  table.report tbody tr:nth-child(even) { background: var(--soft); }
+  table.report tfoot td { font-weight: bold; background: #fff4f8; border-top: 2px solid #ffc4d6; color: var(--point-dark); }
+
+  /* ===== 안내 문구 ===== */
+  .guide-line {
+    text-align: center;
+    font-size: 14px;
+    font-weight: bold;
+    color: #8a7580;
+    background: #fff8fb;
+    border: 2px dashed #ffd6e4;
+    border-radius: 14px;
+    padding: 11px;
+    margin: 6px 0 12px;
+    line-height: 1.5;
+  }
+</style>
+
+<div class="wrap">
+
+  <!-- ===== 맨 위 제목 ===== -->
+  <header>
+    <h1>🐷 모두의 정산</h1>
+    <div class="subtitle">총무들이여!!! 정산을 쉽고 간편하게 뚝딱!! ✨</div>
+  </header>
+
+  <!-- ===== 1) 여행 정보 ===== -->
+  <div class="card">
+    <h2>🧳 우리 모임</h2>
+    <div class="field">
+      <label>모임 제목</label>
+      <input id="tripTitle" placeholder="예) 여름 제주도 여행 🌴" />
+    </div>
+    <div class="field">
+      <label>날짜</label>
+      <input id="tripDate" type="date" />
+    </div>
+  </div>
+
+  <!-- ===== 2) 참여자 ===== -->
+  <div class="card">
+    <h2>🙋 참여자</h2>
+    <div class="row">
+      <input id="personName" placeholder="이름을 적어주세요" onkeydown="if(event.key==='Enter')addPerson()" />
+      <button class="btn-add" onclick="addPerson()">추가</button>
+    </div>
+    <div class="chips" id="personList"></div>
+    <div class="hint" id="personHint">먼저 함께한 사람들의 이름을 모두 넣어주세요.</div>
+  </div>
+
+  <!-- ===== 3) 지출 내역 ===== -->
+  <div class="card">
+    <h2>💸 지출 내역</h2>
+    <div class="field">
+      <label>누가 냈나요?</label>
+      <select id="expPayer"></select>
+    </div>
+    <div class="row field">
+      <div>
+        <label>항목</label>
+        <select id="expCategory">
+          <option value="숙소">🏨 숙소</option>
+          <option value="교통">🚌 교통</option>
+          <option value="식비">🍚 식비</option>
+          <option value="체험">🎢 체험</option>
+          <option value="기타">🎁 기타</option>
+        </select>
+      </div>
+      <div>
+        <label>날짜</label>
+        <input id="expDate" type="date" />
+      </div>
+    </div>
+    <div class="field">
+      <label>내용</label>
+      <input id="expMemo" placeholder="예) 저녁 삼겹살 🍖" />
+    </div>
+    <div class="field">
+      <label>금액 (원)</label>
+      <input id="expAmount" type="number" inputmode="numeric" placeholder="예) 45000"
+             onkeydown="if(event.key==='Enter')addExpense()" />
+    </div>
+    <button class="btn-add" style="width:100%" onclick="addExpense()">➕ 이 지출 추가하기</button>
+
+    <div id="expenseList"></div>
+  </div>
+
+  <!-- ===== 4) 정산 유형 (후불 / 회비) ===== -->
+  <div class="card">
+    <h2>🐷 정산 유형</h2>
+    <div class="method-options">
+      <div class="method-opt on" id="optLater" onclick="setPayType('later')">
+        <span class="ic">💳</span>후불 방식
+        <div class="sub">각자 쓰고<br />나중에 정산</div>
+      </div>
+      <div class="method-opt" id="optDues" onclick="setPayType('dues')">
+        <span class="ic">🐷</span>회비 방식
+        <div class="sub">미리 회비<br />걷어서</div>
+      </div>
+    </div>
+    <div id="duesWrap" style="display:none; margin-top:16px;">
+      <div class="field" style="margin-bottom:10px;">
+        <label>💰 걷은 총 회비 (원)</label>
+        <input id="duesTotal" type="number" inputmode="numeric" placeholder="예) 300000" />
+        <div class="hint" id="duesHint"></div>
+      </div>
+      <div class="guide-line" style="margin:0">
+        💡 지출 내역엔 <b>각자 자기 돈으로 낸 것</b>만 적어주세요.<br />
+        회비로 각자 낼 몫을 채우고, 남으면 돌려드려요!
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 5) 정산 방식 (대표 / 서로) ===== -->
+  <div class="card">
+    <h2 id="methodCardTitle">🎯 정산 방식 고르기</h2>
+    <div class="method-options" id="methodToggle">
+      <div class="method-opt on" id="optHub" onclick="setMethod('hub')">
+        <span class="ic">👑</span>대표가 몰아서
+        <div class="sub">총무 한 명이<br />받아서 나눠줘요</div>
+      </div>
+      <div class="method-opt" id="optP2P" onclick="setMethod('p2p')">
+        <span class="ic">🤝</span>서로서로
+        <div class="sub">각자 서로에게<br />직접 보내요</div>
+      </div>
+    </div>
+    <div class="field" id="hubPickWrap" style="margin-top:16px;">
+      <label id="hubLabel">👑 누가 대표(총무)인가요?</label>
+      <select id="hubPerson"></select>
+    </div>
+  </div>
+
+  <!-- ===== 6) 계산 버튼 ===== -->
+  <button class="btn-main" onclick="calculate()">🎀 정산 결과 보기</button>
+
+  <!-- ===== 5) 결과 ===== -->
+  <div class="card" id="result">
+    <div class="result-head">
+      <h2>🎉 정산 결과</h2>
+      <div id="resultSubtitle" class="detail"></div>
+    </div>
+
+    <div class="summary-box">
+      <div>총 지출</div>
+      <div class="big" id="totalSpent"></div>
+      <div id="perPerson" style="margin-top:6px;"></div>
+    </div>
+
+    <div class="summary-box" id="duesBox" style="display:none;"></div>
+
+    <h2 style="margin-top:18px;">📋 지출 내역 리포트</h2>
+    <div class="cat-summary" id="catSummary"></div>
+    <div id="reportTable"></div>
+
+    <h2 style="margin-top:18px;">💁 각자 상황</h2>
+    <div id="personResult"></div>
+
+    <h2 style="margin-top:18px;" id="payHeading">🤝 이렇게 주고받으면 끝!</h2>
+    <div class="guide-line" id="guideLine"></div>
+    <div id="payResult"></div>
+
+    <div class="cute-ment" id="cuteMent"></div>
+  </div>
+
+  <!-- ===== 결과 저장 / 공유 버튼 ===== -->
+  <div id="shareArea" style="display:none; gap:10px; margin-bottom:24px;">
+    <button class="btn-add" style="flex:1; background:#ffb03b;" onclick="saveImage()">📷 이미지로 저장</button>
+    <button class="btn-add" style="flex:1;" onclick="shareLink()">🔗 카톡·링크 공유</button>
+  </div>
+
+</div>
+
+<script src="html2canvas.min.js"></script>
+<script>
+  /* =========================================================
+     데이터 저장소 (사람들, 지출내역)
+     - 브라우저 안에만 저장돼요 (localStorage)
+     ========================================================= */
+  let people = [];        // 예: ["철수", "영희"]
+  let expenses = [];      // 예: [{payer, category, memo, amount, date}]
+  let methodType = "hub"; // "hub"=대표가 몰아서, "p2p"=서로서로
+  let payType = "later";  // "later"=후불 방식, "dues"=회비 방식
+  let savedHub = "";      // 불러온 대표 이름 (화면 그린 뒤 적용)
+
+  const 항목이모지 = { "숙소":"🏨", "교통":"🚌", "식비":"🍚", "체험":"🎢", "기타":"🎁" };
+
+  /* ----- 저장 & 불러오기 ----- */
+  function save() {
+    localStorage.setItem("modu_data", JSON.stringify({
+      people, expenses,
+      title: tripTitle.value, date: tripDate.value,
+      method: methodType, hub: hubPerson.value,
+      payType: payType, duesTotal: duesTotal.value
+    }));
+  }
+  function load() {
+    const raw = localStorage.getItem("modu_data");
+    if (!raw) return;
+    try {
+      const d = JSON.parse(raw);
+      people = d.people || [];
+      expenses = d.expenses || [];
+      tripTitle.value = d.title || "";
+      tripDate.value = d.date || "";
+      methodType = d.method || "hub";
+      savedHub = d.hub || "";
+      payType = d.payType || "later";
+      duesTotal.value = d.duesTotal || "";
+    } catch(e) {}
+  }
+
+  /* ----- 정산 유형 고르기 (후불 / 회비) ----- */
+  function setPayType(t) {
+    payType = t;
+    optLater.classList.toggle("on", t === "later");
+    optDues.classList.toggle("on", t === "dues");
+    duesWrap.style.display = (t === "dues") ? "block" : "none";
+
+    if (t === "dues") {
+      // 회비 방식은 '총무가 정산'으로 고정
+      methodToggle.style.display = "none";
+      methodCardTitle.textContent = "🎯 총무 정하기";
+      hubLabel.innerHTML = "👑 누가 총무(회비 보관)인가요?";
+      hubPickWrap.style.display = "block";
+      methodType = "hub";
+    } else {
+      // 후불 방식은 대표/서로 직접 고름
+      methodToggle.style.display = "flex";
+      methodCardTitle.textContent = "🎯 정산 방식 고르기";
+      hubLabel.innerHTML = "👑 누가 대표(총무)인가요?";
+      setMethod(methodType);
+    }
+    updateDuesHint();
+    save();
+  }
+
+  /* ----- 정산 방식 고르기 (대표 / 서로) ----- */
+  function setMethod(m) {
+    methodType = m;
+    optHub.classList.toggle("on", m === "hub");
+    optP2P.classList.toggle("on", m === "p2p");
+    hubPickWrap.style.display = (m === "hub") ? "block" : "none";
+    save();
+  }
+
+  /* ----- 회비 1인당 금액 안내 ----- */
+  function updateDuesHint() {
+    const n = people.length;
+    const tot = parseFloat(duesTotal.value) || 0;
+    duesHint.textContent = (payType === "dues" && n > 0 && tot > 0)
+      ? `1인당 ${won(tot / n)}씩 걷은 셈이에요 (${n}명)` : "";
+  }
+
+  /* ----- 숫자를 1,000원 형태로 예쁘게 ----- */
+  function won(n) { return Math.round(n).toLocaleString("ko-KR") + "원"; }
+
+  /* =========================================================
+     참여자 관리
+     ========================================================= */
+  function addPerson() {
+    const name = personName.value.trim();
+    if (!name) return;
+    if (people.includes(name)) { alert("이미 있는 이름이에요! 😅"); return; }
+    people.push(name);
+    personName.value = "";
+    renderPeople();
+    save();
+  }
+  function removePerson(name) {
+    people = people.filter(p => p !== name);
+    // 그 사람이 낸 지출도 함께 삭제
+    expenses = expenses.filter(e => e.payer !== name);
+    renderPeople();
+    renderExpenses();
+    save();
+  }
+  function renderPeople() {
+    // 이름 칩 그리기
+    personList.innerHTML = people.map(p =>
+      `<span class="chip">${p}<button onclick="removePerson('${p}')">×</button></span>`
+    ).join("");
+    personHint.style.display = people.length ? "none" : "block";
+
+    // '누가 냈나요?' 목록 갱신
+    const opts = people.length
+      ? people.map(p => `<option value="${p}">${p}</option>`).join("")
+      : `<option value="">먼저 참여자를 추가해주세요</option>`;
+    const keepPayer = expPayer.value;
+    const keepHub = hubPerson.value;
+    expPayer.innerHTML = opts;
+    hubPerson.innerHTML = opts;   // '누가 대표인가요?' 목록도 같은 사람들로
+    // 기존 선택값 최대한 유지
+    if (people.includes(keepPayer)) expPayer.value = keepPayer;
+    if (people.includes(keepHub)) hubPerson.value = keepHub;
+  }
+
+  /* =========================================================
+     지출 내역 관리
+     ========================================================= */
+  function addExpense() {
+    if (!people.length) { alert("먼저 참여자를 추가해주세요! 🙋"); return; }
+    const payer = expPayer.value;
+    const amount = parseFloat(expAmount.value);
+    if (!payer) { alert("누가 냈는지 골라주세요!"); return; }
+    if (!amount || amount <= 0) { alert("금액을 올바르게 적어주세요! 💸"); return; }
+
+    expenses.push({
+      payer,
+      category: expCategory.value,
+      memo: expMemo.value.trim(),
+      amount,
+      date: expDate.value
+    });
+    expMemo.value = "";
+    expAmount.value = "";
+    renderExpenses();
+    save();
+  }
+  function removeExpense(i) {
+    expenses.splice(i, 1);
+    renderExpenses();
+    save();
+  }
+  function renderExpenses() {
+    if (!expenses.length) {
+      expenseList.innerHTML = `<div class="empty">아직 입력된 지출이 없어요 🫧</div>`;
+      return;
+    }
+    expenseList.innerHTML = expenses.map((e, i) => `
+      <div class="expense-item">
+        <span class="emoji">${항목이모지[e.category]}</span>
+        <div class="info">
+          <div class="top">${e.memo || e.category} · ${won(e.amount)}</div>
+          <div class="bottom">${e.payer} 냄 · ${e.category}${e.date ? " · " + e.date : ""}</div>
+        </div>
+        <button class="btn-small" onclick="removeExpense(${i})">삭제</button>
+      </div>
+    `).join("");
+  }
+
+  /* =========================================================
+     정산 계산 (후불 방식 · 서로서로 주고받기)
+     ========================================================= */
+  function calculate() {
+    if (people.length < 2) { alert("참여자를 2명 이상 넣어주세요! 🙋🙋"); return; }
+    if (!expenses.length) { alert("지출 내역을 하나 이상 넣어주세요! 💸"); return; }
+
+    // 회비 방식이면 회비 총액을 확인
+    const duesT = (payType === "dues") ? (parseFloat(duesTotal.value) || 0) : 0;
+    if (payType === "dues" && duesT <= 0) {
+      alert("걷은 총 회비를 입력해주세요! 🐷"); return;
+    }
+
+    const n = people.length;
+    const total = expenses.reduce((s, e) => s + e.amount, 0);
+    const share = total / n;      // 1인당 실제 부담액
+    const perDues = duesT / n;    // 1인당 미리 낸 회비 (후불 방식이면 0)
+
+    // 각 사람이 자기 돈으로 낸 지출 합계
+    const paid = {};
+    people.forEach(p => paid[p] = 0);
+    expenses.forEach(e => paid[e.payer] += e.amount);
+
+    // 각 사람의 잔액 = (회비 + 낸 지출) - 내야 할 몫  (양수=받을돈, 음수=낼돈)
+    const balance = people.map(p => ({
+      name: p, paid: paid[p], dues: perDues,
+      value: (paid[p] + perDues) - share
+    }));
+
+    /* ----- 화면 위쪽 요약 ----- */
+    result.style.display = "block";
+    shareArea.style.display = "flex";
+    const t = tripTitle.value.trim();
+    resultSubtitle.textContent =
+      (t ? "🧳 " + t : "우리 모임") + (tripDate.value ? " · " + tripDate.value : "");
+    totalSpent.textContent = won(total);
+    perPerson.innerHTML = `한 사람당 <b>${won(share)}</b> 씩이에요 (${n}명)`;
+
+    /* ----- 회비 요약 (회비 방식일 때만) ----- */
+    if (payType === "dues") {
+      const remain = duesT - total;   // 양수=남음, 음수=모자람
+      let line;
+      if (Math.round(remain) > 0)
+        line = `🎉 회비가 <b>${won(remain)}</b> 남았어요! 아래대로 총무가 정산하면 끝이에요.`;
+      else if (Math.round(remain) < 0)
+        line = `😮 회비가 <b>${won(-remain)}</b> 모자라요! 아래대로 총무가 더 걷어서 정산해요.`;
+      else
+        line = `👍 회비가 딱 맞았어요!`;
+      duesBox.style.display = "block";
+      duesBox.innerHTML = `걷은 회비 <b>${won(duesT)}</b> · 총 지출 <b>${won(total)}</b><br />${line}`;
+    } else {
+      duesBox.style.display = "none";
+    }
+
+    /* ----- 항목별 요약 칩 (숙소 얼마, 식비 얼마 …) ----- */
+    const catTotals = {};
+    expenses.forEach(e => catTotals[e.category] = (catTotals[e.category] || 0) + e.amount);
+    catSummary.innerHTML = Object.keys(catTotals).map(c =>
+      `<span class="cat-pill">${항목이모지[c]} ${c} ${won(catTotals[c])}</span>`).join("");
+
+    /* ----- 지출 내역 리포트 표 (날짜순) ----- */
+    const rows = expenses.slice().sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+    let tbl = `<div class="report-wrap"><table class="report">
+      <thead><tr><th>날짜</th><th>항목</th><th>내용</th><th>낸 사람</th><th class="num">금액</th></tr></thead><tbody>`;
+    rows.forEach(e => {
+      tbl += `<tr>
+        <td>${e.date || "-"}</td>
+        <td>${항목이모지[e.category]} ${e.category}</td>
+        <td>${e.memo || "-"}</td>
+        <td>${e.payer}</td>
+        <td class="num">${won(e.amount)}</td></tr>`;
+    });
+    tbl += `</tbody><tfoot><tr><td colspan="4">합계</td><td class="num">${won(total)}</td></tr></tfoot></table></div>`;
+    reportTable.innerHTML = tbl;
+
+    /* ----- 각자 상황 ----- */
+    personResult.innerHTML = balance.map(b => {
+      let tag;
+      if (Math.round(b.value) > 0) tag = `<span class="tag-good">+${won(b.value)} 받아요</span>`;
+      else if (Math.round(b.value) < 0) tag = `<span class="tag-bad">${won(-b.value)} 내요</span>`;
+      else tag = `<span class="tag-zero">딱 맞아요 👍</span>`;
+      return `
+        <div class="person-row">
+          <div>
+            <div class="name">${b.name}</div>
+            <div class="detail">${
+              payType === "dues"
+                ? `회비 ${won(perDues)} + 지출 ${won(b.paid)} · 낼 몫 ${won(share)}`
+                : `낸 돈 ${won(b.paid)} · 낼 몫 ${won(share)}`
+            }</div>
+          </div>
+          <div>${tag}</div>
+        </div>`;
+    }).join("");
+
+    /* ----- 누가 누구에게 얼마 (고른 방식대로) ----- */
+    let transfers = [];
+
+    if (methodType === "hub") {
+      /* 대표가 몰아서: 대표를 가운데 두고, 낼 사람은 대표에게 / 받을 사람은 대표가 보냄 */
+      let hub = hubPerson.value;
+      if (!people.includes(hub)) hub = people[0];   // 혹시 선택 안 됐으면 첫 사람
+      balance.forEach(b => {
+        if (b.name === hub) return;
+        if (Math.round(b.value) < 0) transfers.push({ from: b.name, to: hub, amt: -b.value });
+        else if (Math.round(b.value) > 0) transfers.push({ from: hub, to: b.name, amt: b.value });
+      });
+      if (payType === "dues") {
+        payHeading.textContent = "👑 총무가 이렇게 정산하면 끝!";
+        guideLine.innerHTML = `총무 <b>${hub}</b>님이 회비로 각자 몫을 맞춰서 아래대로 주고받으면 정산 완료예요! 🐷`;
+      } else {
+        payHeading.textContent = "👑 대표가 이렇게 정산하면 끝!";
+        guideLine.innerHTML = `대표 <b>${hub}</b>님이 아래대로 받고 나눠주면 정산 완료예요! 💰`;
+      }
+    } else {
+      /* 서로서로: 받을 사람(+)과 낼 사람(-)을 큰 것부터 매칭해 거래 수 최소화 */
+      const creditors = balance.filter(b => Math.round(b.value) > 0)
+                               .map(b => ({ name: b.name, amt: b.value }))
+                               .sort((a, b) => b.amt - a.amt);
+      const debtors = balance.filter(b => Math.round(b.value) < 0)
+                             .map(b => ({ name: b.name, amt: -b.value }))
+                             .sort((a, b) => b.amt - a.amt);
+      let ci = 0, di = 0;
+      while (ci < creditors.length && di < debtors.length) {
+        const give = Math.min(creditors[ci].amt, debtors[di].amt);
+        if (Math.round(give) > 0) {
+          transfers.push({ from: debtors[di].name, to: creditors[ci].name, amt: give });
+        }
+        creditors[ci].amt -= give;
+        debtors[di].amt -= give;
+        if (creditors[ci].amt < 1) ci++;
+        if (debtors[di].amt < 1) di++;
+      }
+      payHeading.textContent = "🤝 이렇게 서로 보내면 끝!";
+      guideLine.innerHTML = `아래 화살표대로 <b>서로에게 직접</b> 보내주면 정산 완료예요! 💸`;
+    }
+
+    payResult.innerHTML = transfers.length
+      ? transfers.map(tr => `
+          <div class="pay-row">
+            <span class="from">${tr.from}</span>
+            <span class="arrow">→</span>
+            <span class="to">${tr.to}</span>
+            <span class="money">${won(tr.amt)}</span>
+          </div>`).join("")
+      : `<div class="empty">모두 딱 맞게 냈어요! 주고받을 게 없네요 🎊</div>`;
+
+    /* ----- 귀여운 마무리 멘트 ----- */
+    const ments = [
+      "정산 끝! 우리 다음에 또 놀러 가요~ 🥰",
+      "수고한 총무님, 최고예요! 다음에 또 뭉치자 ✨",
+      "계산 완료! 우정도 돈도 깔끔하게 💕 다음에 또 가요!",
+      "짠! 정산 뚝딱 완료 🎀 다음 여행도 기대할게요~",
+      "money는 정확하게, 우정은 영원히 💖 또 만나요!"
+    ];
+    cuteMent.textContent = ments[Math.floor(Math.random() * ments.length)];
+
+    // 결과로 스르륵 이동
+    result.scrollIntoView({ behavior: "smooth" });
+  }
+
+  /* =========================================================
+     결과를 이미지(PNG)로 저장하기
+     ========================================================= */
+  function saveImage() {
+    if (typeof html2canvas === "undefined") {
+      alert("이미지 도구를 아직 못 불러왔어요. 잠시 후 다시 눌러주세요 😢"); return;
+    }
+    html2canvas(document.getElementById("result"), { backgroundColor: "#fff5e1", scale: 2 })
+      .then(canvas => {
+        const a = document.createElement("a");
+        a.download = (tripTitle.value.trim() || "모두의정산") + "_정산결과.png";
+        a.href = canvas.toDataURL("image/png");
+        a.click();
+      })
+      .catch(() => alert("이미지 저장에 실패했어요 😢"));
+  }
+
+  /* =========================================================
+     결과를 링크로 만들어 카톡 등으로 공유하기
+     - 입력 내용을 링크 주소 안에 담아요 (받는 사람이 열면 똑같이 보임)
+     ========================================================= */
+  function b64urlEncode(str) {
+    return btoa(unescape(encodeURIComponent(str)))
+      .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+  function b64urlDecode(str) {
+    str = str.replace(/-/g, "+").replace(/_/g, "/");
+    return decodeURIComponent(escape(atob(str)));
+  }
+  function encodeData() {
+    const obj = {
+      t: tripTitle.value, d: tripDate.value, pe: people, ex: expenses,
+      pt: payType, du: duesTotal.value, me: methodType, hu: hubPerson.value
+    };
+    return b64urlEncode(JSON.stringify(obj));
+  }
+  function shareLink() {
+    const base = location.origin + location.pathname;
+    const url = base + "?d=" + encodeData();
+    const t = tripTitle.value.trim() || "우리 모임";
+
+    // 파일을 그냥 더블클릭해서 연 경우(file://)엔 남에게 링크가 안 열려요
+    if (location.protocol === "file:") {
+      alert("이 링크 공유는 '인터넷 주소로 올린 뒤'에 쓸 수 있어요 🌐\n(배포 방법은 아래에서 안내해드릴게요!)");
+      return;
+    }
+    const msg = `[모두의 정산] ${t} 정산 결과예요! 링크에서 확인해요 👇`;
+    if (navigator.share) {
+      navigator.share({ title: "모두의 정산", text: msg, url }).catch(() => {});
+    } else if (navigator.clipboard) {
+      navigator.clipboard.writeText(url)
+        .then(() => alert("링크가 복사됐어요! 📋\n카톡 대화창에 붙여넣기 하면 돼요 🔗"));
+    } else {
+      prompt("이 링크를 복사해서 카톡으로 보내세요 🔗", url);
+    }
+  }
+
+  /* =========================================================
+     시작할 때: (1) 공유 링크로 들어왔으면 그 내용, (2) 아니면 저장된 내용
+     ========================================================= */
+  const dParam = new URLSearchParams(location.search).get("d");
+  let fromLink = false;
+  if (dParam) {
+    try {
+      const d = JSON.parse(b64urlDecode(dParam));
+      tripTitle.value = d.t || ""; tripDate.value = d.d || "";
+      people = d.pe || []; expenses = d.ex || [];
+      payType = d.pt || "later"; duesTotal.value = d.du || "";
+      methodType = d.me || "hub"; savedHub = d.hu || "";
+      fromLink = true;
+    } catch (e) { load(); }
+  } else {
+    load();
+  }
+
+  renderPeople();
+  renderExpenses();
+  // 저장돼 있던(또는 링크로 받은) 대표 다시 적용
+  if (people.includes(savedHub)) hubPerson.value = savedHub;
+  // 정산 유형(후불/회비) + 정산 방식 적용
+  setPayType(payType);
+  // 공유 링크로 들어왔으면 결과를 바로 보여줌
+  if (fromLink && people.length >= 2 && expenses.length) calculate();
+
+  // 제목·날짜·회비 바뀌면 자동 저장
+  tripTitle.addEventListener("input", save);
+  tripDate.addEventListener("input", save);
+  duesTotal.addEventListener("input", () => { updateDuesHint(); save(); });
+</script>
