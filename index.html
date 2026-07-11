@@ -305,8 +305,12 @@
       <input id="tripTitle" placeholder="예) 여름 제주도 여행 🌴" />
     </div>
     <div class="field">
-      <label>날짜</label>
-      <input id="tripDate" type="date" />
+      <label>날짜 (여러 날이면 시작~끝 모두 선택)</label>
+      <div class="row">
+        <input id="tripStart" type="date" />
+        <input id="tripEnd" type="date" />
+      </div>
+      <div class="hint" id="tripDateHint"></div>
     </div>
   </div>
 
@@ -461,7 +465,7 @@
   function save() {
     localStorage.setItem("modu_data", JSON.stringify({
       people, expenses,
-      title: tripTitle.value, date: tripDate.value,
+      title: tripTitle.value, date: tripStart.value, dateEnd: tripEnd.value,
       method: methodType, hub: hubPerson.value,
       payType: payType, duesTotal: duesTotal.value
     }));
@@ -474,7 +478,8 @@
       people = d.people || [];
       expenses = d.expenses || [];
       tripTitle.value = d.title || "";
-      tripDate.value = d.date || "";
+      tripStart.value = d.date || "";
+      tripEnd.value = d.dateEnd || "";
       methodType = d.method || "hub";
       savedHub = d.hub || "";
       payType = d.payType || "later";
@@ -522,6 +527,28 @@
     const tot = parseFloat(duesTotal.value) || 0;
     duesHint.textContent = (payType === "dues" && n > 0 && tot > 0)
       ? `1인당 ${won(tot / n)}씩 걷은 셈이에요 (${n}명)` : "";
+  }
+
+  /* ----- 여행 날짜를 글자로 (예: "2026-07-11 ~ 2026-07-12 (1박 2일)") ----- */
+  function tripDateText() {
+    const s = tripStart.value, e = tripEnd.value;
+    if (s && e && e !== s) {
+      const days = Math.round((new Date(e) - new Date(s)) / 86400000) + 1;
+      if (days >= 2) return `${s} ~ ${e} (${days - 1}박 ${days}일)`;
+      return `${s} ~ ${e}`;   // 종료일이 시작일보다 빠른 경우 등
+    }
+    return s || e || "";
+  }
+  /* ----- 날짜 칸 아래 안내(며칠인지 / 잘못 골랐는지) ----- */
+  function updateTripDateHint() {
+    const s = tripStart.value, e = tripEnd.value;
+    if (s && e && e < s) {
+      tripDateHint.textContent = "⚠️ 종료일이 시작일보다 빨라요. 다시 확인해주세요!";
+    } else if (s && e && e !== s) {
+      tripDateHint.textContent = "📅 " + tripDateText();
+    } else {
+      tripDateHint.textContent = "";
+    }
   }
 
   /* ----- 숫자를 1,000원 형태로 예쁘게 ----- */
@@ -644,8 +671,9 @@
     result.style.display = "block";
     shareArea.style.display = "flex";
     const t = tripTitle.value.trim();
+    const dText = tripDateText();
     resultSubtitle.textContent =
-      (t ? "🧳 " + t : "우리 모임") + (tripDate.value ? " · " + tripDate.value : "");
+      (t ? "🧳 " + t : "우리 모임") + (dText ? " · " + dText : "");
     totalSpent.textContent = won(total);
     perPerson.innerHTML = `한 사람당 <b>${won(share)}</b> 씩이에요 (${n}명)`;
 
@@ -803,7 +831,7 @@
   }
   function encodeData() {
     const obj = {
-      t: tripTitle.value, d: tripDate.value, pe: people, ex: expenses,
+      t: tripTitle.value, d: tripStart.value, d2: tripEnd.value, pe: people, ex: expenses,
       pt: payType, du: duesTotal.value, me: methodType, hu: hubPerson.value
     };
     return b64urlEncode(JSON.stringify(obj));
@@ -837,7 +865,7 @@
   if (dParam) {
     try {
       const d = JSON.parse(b64urlDecode(dParam));
-      tripTitle.value = d.t || ""; tripDate.value = d.d || "";
+      tripTitle.value = d.t || ""; tripStart.value = d.d || ""; tripEnd.value = d.d2 || "";
       people = d.pe || []; expenses = d.ex || [];
       payType = d.pt || "later"; duesTotal.value = d.du || "";
       methodType = d.me || "hub"; savedHub = d.hu || "";
@@ -856,8 +884,11 @@
   // 공유 링크로 들어왔으면 결과를 바로 보여줌
   if (fromLink && people.length >= 2 && expenses.length) calculate();
 
+  // 날짜 칸 아래 안내 처음 한 번 표시
+  updateTripDateHint();
   // 제목·날짜·회비 바뀌면 자동 저장
   tripTitle.addEventListener("input", save);
-  tripDate.addEventListener("input", save);
+  tripStart.addEventListener("input", () => { updateTripDateHint(); save(); });
+  tripEnd.addEventListener("input", () => { updateTripDateHint(); save(); });
   duesTotal.addEventListener("input", () => { updateDuesHint(); save(); });
 </script>
